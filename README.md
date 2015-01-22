@@ -39,9 +39,6 @@ To build SHD, simply do:
 
 	$ make
 
-Notice that SHD requires boost library as well as gcc-4.7. gcc-4.8 and newer versions have
-compatibility issues with boost library.
-
 # Running a test
 
 To run a test using SHD, simply do:
