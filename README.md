@@ -6,20 +6,21 @@ smaller than a user defined threshold **T** (the number of allowed edits between
 
 Testing if two stings differs by a small amount is a prevalent function that is used in many
 applications. One of its biggest usage, perhaps, is in DNA or protein mapping, where a short
-DNA or protein string is compared against a enormous database, in order to find similar matches. In
-such applications, a query string is usually compared against multiple candidates strings in the
-database, where the similar matches are reported.
+DNA or protein string is compared against an enormous database, in order to find similar matches. In
+such applications, a query string is usually compared against multiple candidate strings in the
+database. Only candidates that are similar to the query are considered **matches** and recorded.
 
 SHD expands the basic Hamming distance computation, which only detects substitutions, into a
 full-fledged edit-distance filter, which counts not only substitutions but **insertions and
 deletions** as well.
 
-SHD by itself, however, is *not* a edit-distance calculator. SHD is a filter that detects and
+SHD by itself, however, is *not* an edit-distance calculator. SHD is a filter that detects and
 filters some of the string pairs that have edit-distances that are greater than **T**, but it **does
-not** validate the string pairs that pass the filter have edit-distances smaller than T. In another
-word, it filters out some incorrect matches while passing some. In a DNA mapper or protein mapper,
-SHD should be used in combination with an edit-distance calculator, where SHD reduces the number
-of incorrect matches that reach to the edit-distance calculator.
+not** validate the string pairs that pass the filter regarding if they have edit-distances smaller
+than T. In another word, it filters out some incorrect matches while passing some. In a DNA mapper
+or protein mapper, SHD should be used in combination with an edit-distance calculator, where SHD
+reduces the number of incorrect matches that reach to the more rigorous edit-distance calculator (or
+filter).
 
 As a filter, SHD achieves high accuracy with high speed. However, the accuracy drops as the
 edit-distance threshold **T** increases. We recommend not setting the edit-distance threshold **T**
@@ -31,7 +32,23 @@ support longer query strings using future instruction sets such as AVX2 or AVX51
 developing this code, however, we do not have a system that supports such ISAs. Hence SHD currently
 supports a maximum of 128 letters.
 
-The algorithm of SHD is described at: [ H. Xin et al., **Shifted Hamming Distance: A Fast and Accurate SIMD-Friendly Filter to Accelerate Alignment Verification in Read Mapping**, Bioinformatics ](http://bioinformatics.oxfordjournals.org/content/early/2015/01/10/bioinformatics.btu856.abstract)
+**Important note:** Currently an AVX2 version of SHD is under development. We aim a release date by
+October 1st. We will start developing an AVX512 version of the program once Intel releases the 2nd
+generation Xeon Phi cards, the Knights Landing.
+
+**Protein sequencing users:** Although currently SHD only supports mapping DNA, it can be easily
+expanded to support protein matching. Please directly contact the author if you need such
+functionality. Caveat: with SSE, SHD only supports matching strings that are shorter than 128. We
+understand this length is typically too short for comparing proteins. We hope this problem will be
+solved once wider SIMD ISAs come out.
+
+**GPU support**: We do have a premature CUDA version of the program. The development of the GPU
+version is temporarily on pause so we can focus on pushing forward other ideas. If the demand of a
+GPU version is high, we will resume the development and push out the code.
+
+The algorithm of SHD is described at: [ H. Xin et al., **Shifted Hamming Distance: A Fast and
+Accurate SIMD-Friendly Filter to Accelerate Alignment Verification in Read Mapping**, Bioinformatics
+](http://bioinformatics.oxfordjournals.org/content/early/2015/01/10/bioinformatics.btu856.abstract)
 
 # Getting Started
 
