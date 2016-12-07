@@ -1,6 +1,7 @@
 #include <iostream>
 #include <x86intrin.h>
 #include <emmintrin.h>
+#include <immintrin.h>
 #include <cstring>
 #include <string>
 #include <cstdlib>
@@ -14,11 +15,15 @@ using namespace std;
 
 int count_ID_length_sse(__m128i bit_mask, int start_pos , int total_length) {
 	__m128i shifted_mask = shift_left_sse1(bit_mask, start_pos);
+	
+	cout << "start_pos: " << start_pos << " ";
+	print128_bit(shifted_mask);
+
 	unsigned long *byte_cast = (unsigned long*) &shifted_mask;
 	int length_result = 0;
 	
 	for (int i = 0; i < (total_length - start_pos) / 8 * sizeof(unsigned long); i++) {
-		int id_length = __lzcnt64(byte_cast[i]);
+		int id_length = _tzcnt_u64(byte_cast[i]);
 
 		if (id_length == 0 && byte_cast[i] == 0) {
 			id_length = 8 * sizeof(unsigned long);
@@ -29,6 +34,8 @@ int count_ID_length_sse(__m128i bit_mask, int start_pos , int total_length) {
 			break;
 		}
 	}
+
+	cout << "length result: " << length_result << endl;
 
 	if (length_result < total_length - start_pos)
 		return length_result;
@@ -250,13 +257,13 @@ int main () {
 	unsigned long *bit_cast = (unsigned long*) test;
 
 	for (int i = 0; i < 2; i++)
-		cout << bit_cast[i] << " " <<  8 * sizeof(unsigned long) - __lzcnt64(bit_cast[i]) << endl;
+		cout << bit_cast[i] << " " <<  8 * sizeof(unsigned long) - _tzcnt_u64(bit_cast[i]) << endl;
 	
 	unsigned long checking[2];
 	checking[0] = 0;
 	checking[1] = 4;
 	for (int i = 0; i < 2; i++)
-		cout << 8 * sizeof(unsigned long) - __lzcnt64(checking[i]) << endl;
+		cout << 8 * sizeof(unsigned long) - _tzcnt_u64(checking[i]) << endl;
 
 
 	char read_t[_MAX_LENGTH_] __aligned__;
@@ -297,7 +304,7 @@ int main () {
 
 	bit_cast = (unsigned long*) &mask;
 	for (int i = 0; i < 2; i++)
-		cout <<  bit_cast[i] << " " << __lzcnt64(bit_cast[i]) << endl;
+		cout <<  bit_cast[i] << " " << _tzcnt_u64(bit_cast[i]) << endl;
 
 	strcpy(read_t,
 "ACGCTAGTAGCCGGAATAACAGGTAGGCCTACATTTTCTATACGGCGCCGGCAACCTTGAGGGGCCGCGCCCCGTTACACTTTATACGTTTCCCTTGCAAGCCTTCGTGTCGGAGCATATGTATATGG");
