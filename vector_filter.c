@@ -142,21 +142,29 @@ __m128i left_alignr_helper(__m128i curr, __m128i next, int shift_num) {
 }
 
 __m128i shift_right_sse1(__m128i vec, int shift_num) {
-	if(shift_num == 8)	
-		return _mm_slli_si128(vec, 1);
-	__m128i carryover = _mm_slli_si128(vec, 1);
-	carryover = _mm_srli_epi64(carryover, 8 - (shift_num % 8));
-	vec = _mm_slli_epi64(vec, shift_num % 8);
-	return _mm_or_si128(vec, carryover);
+	if (shift_num >= 64) {
+		vec = _mm_slli_si128(vec, 8);
+		return _mm_slli_epi64(vec, shift_num % 64);
+	}
+	else {
+		__m128i carryover = _mm_slli_si128(vec, 8);
+		carryover = _mm_srli_epi64(carryover, 64 - shift_num);
+		vec = _mm_slli_epi64(vec, shift_num);
+		return _mm_or_si128(vec, carryover);
+	}
 }
 
 __m128i shift_left_sse1(__m128i vec, int shift_num) {
-	if(shift_num == 8)
-		return _mm_srli_si128(vec, 1);
-	__m128i carryover = _mm_srli_si128(vec, 1);
-	carryover = _mm_slli_epi64(carryover, 8 - (shift_num % 8));
-	vec = _mm_srli_epi64(vec, shift_num % 8);
-	return _mm_or_si128(vec, carryover);
+	if (shift_num >= 64) {
+		vec = _mm_srli_si128(vec, 8);
+		return _mm_srli_epi64(vec, shift_num % 64);
+	}
+	else {
+		__m128i carryover = _mm_srli_si128(vec, 8);
+		carryover = _mm_slli_epi64(carryover, 64 - shift_num);
+		vec = _mm_srli_epi64(vec, shift_num);
+		return _mm_or_si128(vec, carryover);
+	}
 }
 
 __m128i shift_right_sse11(__m128i pri_vec, __m128i vec, int shift_num) {

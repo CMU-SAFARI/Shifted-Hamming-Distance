@@ -54,6 +54,7 @@ public:
 
 	void reset();	
 	void run();
+	bool check_pass();
 	void backtrack(int &ED, string &CIGAR);
 private:
 	int ED_t;
@@ -65,7 +66,7 @@ private:
 	int **end;
 
 	// backtracking data
-	bool ED_finished;
+	bool ED_pass;
 	int final_lane_idx;
 	int final_ED;
 
@@ -186,7 +187,7 @@ void SIMD_ED::load_reads(char *read, char *ref, int length) {
 }
 
 void SIMD_ED::reset() {
-	ED_finished = false;
+	ED_pass = false;
 	for (int i = 1; i < total_lanes - 1; i++) {
 		int ED = abs(i - mid_lane);
 		cur_ED[i] = ED;
@@ -224,10 +225,10 @@ void SIMD_ED::run() {
 				cout << "start[" << l << "][" << e << "]: " << start[l][e];
 				cout << "   end[" << l << "][" << e << "]: " << end[l][e] << endl;
 
-				if (end[l][e] == buffer_length) {
+				if (end[l][e] == buffer_length - 1) {
 					final_lane_idx = l;
 					final_ED = e;
-					ED_finished = true;
+					ED_pass = true;
 					
 					break;
 				}
@@ -237,9 +238,59 @@ void SIMD_ED::run() {
 
 		}
 
-		if (ED_finished)
+		if (ED_pass)
 			break;
 	}
+}
+
+bool SIMD_ED::check_pass() {
+	return ED_pass;
+}
+
+void SIMD_ED::backtrack(int &ED, string &CIGAR) {
+	ED = final_ED;
+
+	int lane_idx = final_lane_idx;
+	int ED_probe = final_ED;
+
+	while (ED_probe > abs(lane_idx - mid_lane) ) {
+		int match_count = end[lane_idx][ED_probe] - start[lane_idx][ED_probe];
+		CIGAR = to_string(match_count) + CIGAR;
+		
+		//int next_lane_idx;
+		cout << "start[" << lane_idx << "][" << ED_probe << "]: " << start[lane_idx][ED_probe];
+		cout << "   end[" << lane_idx << "][" << ED_probe - 1 << "]: " << end[lane_idx][ED_probe - 1] << endl;
+
+		if (start[lane_idx][ED_probe] == (end[lane_idx][ED_probe - 1] + 1) ) {
+			lane_idx = lane_idx;
+			CIGAR = "M" + CIGAR;
+		}
+		else if (start[lane_idx][ED_probe] == end[lane_idx - 1][ED_probe - 1]) {
+			lane_idx = lane_idx - 1;
+			CIGAR = "I" + CIGAR;
+		}
+		else if (start[lane_idx][ED_probe] == end[lane_idx + 1][ED_probe - 1]) {
+			lane_idx = lane_idx + 1;
+			CIGAR = "D" + CIGAR;
+		}
+		else
+			cerr << "Error! No lane!!" << endl;
+		
+		ED_probe--;
+	}
+
+	int match_count = end[lane_idx][ED_probe] - start[lane_idx][ED_probe];
+	CIGAR = to_string(match_count) + CIGAR;
+
+	if (lane_idx < mid_lane) {
+		for (int i = 0; i < mid_lane - lane_idx; i++)
+			CIGAR = "D" + CIGAR;
+	}
+	else if (lane_idx > mid_lane) {
+		for (int i = 0; i < lane_idx - mid_lane; i++)
+			CIGAR = "I" + CIGAR;
+	}
+
 }
 
 int main () {
@@ -316,6 +367,10 @@ int main () {
 	test_obj.load_reads(read_t, ref_t, 128);
 	test_obj.reset();
 	test_obj.run();
+	string CIGAR;
+	int ED;
+	test_obj.backtrack(ED, CIGAR);
+	cout << "CIGAR: " << CIGAR << endl;
 
 	return 0;
 }
