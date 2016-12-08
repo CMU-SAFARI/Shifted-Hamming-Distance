@@ -6,7 +6,7 @@ LD = ld
 
 LDFLAGS = -r
 
-CFLAGS = -O3 -msse4.2 -I .
+CFLAGS = -g -msse4.2 -I .
 UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S),Linux)
 endif
