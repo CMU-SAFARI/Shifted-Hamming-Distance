@@ -1,4 +1,4 @@
-EXECUTABLE = countPassFilter popcount bit_convert vector_filter string_cp shift test_SIMD_ED sse.o #ssse3_popcount test_modifier
+EXECUTABLE = countPassFilter popcount bit_convert vector_filter string_cp shift test_SIMD_ED vectorED sse.o #ssse3_popcount test_modifier
 
 CXX = g++
 
@@ -6,7 +6,7 @@ LD = ld
 
 LDFLAGS = -r
 
-CFLAGS = -g -mbmi --std=c++11 -msse4.2 -I .
+CFLAGS = -g -pg -mbmi --std=c++11 -msse4.2 -I .
 UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S),Linux)
 endif
@@ -64,6 +64,9 @@ read_modifier.o: read_modifier.c read_modifier.h
 	$(CXX) $(CFLAGS) -c $< -o $@
 	
 test_modifier: mask.o print.o bit_convert.o popcount.o vector_filter.o read_modifier.o test_modifier.c 
+	$(CXX) $(CFLAGS) $^ -o $@
+
+vectorED: SIMD_ED.o mask.o print.o bit_convert.o popcount.o vector_filter.o vectorED.cc
 	$(CXX) $(CFLAGS) $^ -o $@
 
 test_SIMD_ED: SIMD_ED.o vector_filter.o bit_convert.o mask.o popcount.o print.o test_ED.cc

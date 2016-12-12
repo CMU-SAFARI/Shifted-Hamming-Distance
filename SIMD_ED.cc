@@ -3,8 +3,8 @@
 int count_ID_length_sse(__m128i bit_mask, int start_pos , int total_length) {
 	__m128i shifted_mask = shift_left_sse1(bit_mask, start_pos);
 	
-	cout << "start_pos: " << start_pos << " ";
-	print128_bit(shifted_mask);
+	//cout << "start_pos: " << start_pos << " ";
+	//print128_bit(shifted_mask);
 
 	unsigned long *byte_cast = (unsigned long*) &shifted_mask;
 	int length_result = 0;
@@ -22,7 +22,7 @@ int count_ID_length_sse(__m128i bit_mask, int start_pos , int total_length) {
 		}
 	}
 
-	cout << "length result: " << length_result << endl;
+	//cout << "length result: " << length_result << endl;
 
 	if (length_result < total_length - start_pos)
 		return length_result;
@@ -71,14 +71,14 @@ void SIMD_ED::init(int ED_threshold) {
 	hamming_masks = new __m128i [total_lanes];
 
 	cur_ED = new int[total_lanes];
-	ED_info = new ED_INFO[ED_t];
+	ED_info = new ED_INFO[ED_t + 1];
 
 	start = new int* [total_lanes];
 	end = new int* [total_lanes];
 
 	for (int i = 0; i < total_lanes; i++) {
-		start[i] = new int [ED_t]();
-		end[i] = new int [ED_t]();
+		start[i] = new int [ED_t + 1]();
+		end[i] = new int [ED_t + 1]();
 	}
 }
 
@@ -94,8 +94,8 @@ void SIMD_ED::load_reads(char *read, char *ref, int length) {
 	strncpy(B, ref, length);
 	sse3_convert2bit1(B, B_bit0_t, B_bit1_t);
 
-	cout << "A: " << A  << endl;
-	cout << "B: " << B  << endl;
+	//cout << "A: " << A  << endl;
+	//cout << "B: " << B  << endl;
 
 	__m128i *A0 = (__m128i*) A_bit0_t;
 	__m128i *A1 = (__m128i*) A_bit1_t;
@@ -124,9 +124,9 @@ void SIMD_ED::load_reads(char *read, char *ref, int length) {
 
 		hamming_masks[i] = _mm_or_si128(mask_bit0, mask_bit1);
 
-		cout << "hamming_masks[" << i << "]: ";
-		print128_bit(hamming_masks[i]);
-		cout << endl;
+		//cout << "hamming_masks[" << i << "]: ";
+		//print128_bit(hamming_masks[i]);
+		//cout << endl;
 	}
 }
 
@@ -143,15 +143,14 @@ void SIMD_ED::reset() {
 void SIMD_ED::run() {
 	int length = count_ID_length_sse(hamming_masks[mid_lane], 0, buffer_length);
 
-	cout << "length: " << length << endl;
-
 	end[mid_lane][0] = length;
 	cur_ED[mid_lane] = 1;
 	
-	for (int e = 1; e < ED_t; e++) {
+	for (int e = 1; e <= ED_t; e++) {
 		for (int l = 1; l < total_lanes - 1; l++) {
 			if (cur_ED[l] == e) {
-				cout << "e: " << e << " l: " << l << endl;
+				
+				//cout << "e: " << e << " l: " << l << endl;
 
 				// Find the largest starting position
 				int max_start = end[l][e-1] + 1;
@@ -166,8 +165,8 @@ void SIMD_ED::run() {
 				start[l][e] = max_start;
 				end[l][e] = max_start + length;
 
-				cout << "start[" << l << "][" << e << "]: " << start[l][e];
-				cout << "   end[" << l << "][" << e << "]: " << end[l][e] << endl;
+				//cout << "start[" << l << "][" << e << "]: " << start[l][e];
+				//cout << "   end[" << l << "][" << e << "]: " << end[l][e] << endl;
 
 				if (end[l][e] == buffer_length - 1) {
 					final_lane_idx = l;
@@ -199,9 +198,8 @@ void SIMD_ED::backtrack() {
 		int match_count = end[lane_idx][ED_probe] - start[lane_idx][ED_probe];
 		ED_info[ED_probe].id_length = match_count;
 		
-		//int next_lane_idx;
-		cout << "start[" << lane_idx << "][" << ED_probe << "]: " << start[lane_idx][ED_probe];
-		cout << "   end[" << lane_idx << "][" << ED_probe - 1 << "]: " << end[lane_idx][ED_probe - 1] << endl;
+		//cout << "start[" << lane_idx << "][" << ED_probe << "]: " << start[lane_idx][ED_probe];
+		//cout << "   end[" << lane_idx << "][" << ED_probe - 1 << "]: " << end[lane_idx][ED_probe - 1] << endl;
 
 		if (start[lane_idx][ED_probe] == (end[lane_idx][ED_probe - 1] + 1) ) {
 			ED_info[ED_probe].type = MISMATCH;
