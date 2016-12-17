@@ -1,4 +1,4 @@
-EXECUTABLE = countPassFilter popcount bit_convert vector_filter string_cp shift test_SIMD_ED vectorED sse.o #ssse3_popcount test_modifier
+EXECUTABLE = countPassFilter popcount bit_convert vector_filter string_cp shift test_SIMD_ED vectorED vectorLV sse.o #ssse3_popcount test_modifier
 
 CXX = g++
 
@@ -6,7 +6,9 @@ LD = ld
 
 LDFLAGS = -r
 
-CFLAGS = -g -pg -mbmi --std=c++11 -msse4.2 -I .
+#CFLAGS = -g -mbmi --std=c++11 -msse4.2 -I .
+CFLAGS = -O3 -mbmi --std=c++11 -msse4.2 -I .
+#CFLAGS_LV = -O3 --std=c++11
 UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S),Linux)
 endif
@@ -17,6 +19,9 @@ endif
 #CFLAGS = -O3 -march=native -P -E
 
 all: $(EXECUTABLE)
+
+LV.o: LV.cc LV.h
+	$(CXX) $(CFLAGS) -c $< -o $@
 
 SIMD_ED.o: SIMD_ED.cc SIMD_ED.h
 	$(CXX) $(CFLAGS) -c $< -o $@
@@ -69,6 +74,9 @@ test_modifier: mask.o print.o bit_convert.o popcount.o vector_filter.o read_modi
 vectorED: SIMD_ED.o mask.o print.o bit_convert.o popcount.o vector_filter.o vectorED.cc
 	$(CXX) $(CFLAGS) $^ -o $@
 
+vectorLV: LV.o mask.o print.o bit_convert.o popcount.o vector_filter.o vectorLV.cc
+	$(CXX) $(CFLAGS) $^ -o $@
+
 test_SIMD_ED: SIMD_ED.o vector_filter.o bit_convert.o mask.o popcount.o print.o test_ED.cc
 	$(CXX) $(CFLAGS) $^ -o $@
 		
@@ -80,4 +88,4 @@ test_SIMD_ED: SIMD_ED.o vector_filter.o bit_convert.o mask.o popcount.o print.o 
 .PHONY : clean
 
 clean:
-	rm *.o $(EXECUTABLE)
+	rm $(EXECUTABLE) *.o

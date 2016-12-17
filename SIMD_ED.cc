@@ -9,14 +9,16 @@ int count_ID_length_sse(__m128i bit_mask, int start_pos , int total_length) {
 	unsigned long *byte_cast = (unsigned long*) &shifted_mask;
 	int length_result = 0;
 	
-	for (int i = 0; i < (total_length - start_pos) / 8 * sizeof(unsigned long); i++) {
+	for (int i = 0; i <= (total_length - start_pos - 1) / (8 * sizeof(unsigned long) ); i++) {
 		int id_length = _tzcnt_u64(byte_cast[i]);
 
-		if (id_length == 0 && byte_cast[i] == 0) {
+		if (id_length == 8 * sizeof(unsigned long) && byte_cast[i] == 0) {
+			//cout << "A" << endl;
 			id_length = 8 * sizeof(unsigned long);
 			length_result += id_length;
 		}
 		else {
+			//cout << "B, byte_cast[" << i <<"]:" << byte_cast[i] << endl;
 			length_result += id_length;
 			break;
 		}
@@ -142,33 +144,51 @@ void SIMD_ED::reset() {
 
 void SIMD_ED::run() {
 	int length = count_ID_length_sse(hamming_masks[mid_lane], 0, buffer_length);
+	
+	//cout << "length result: " << length << " buffer_length: " << buffer_length << endl;
 
 	end[mid_lane][0] = length;
 	cur_ED[mid_lane] = 1;
+
+	if (length == buffer_length) {
+		final_lane_idx = mid_lane;
+		final_ED = 0;
+		ED_pass = true;
+		return;
+	}
 	
 	for (int e = 1; e <= ED_t; e++) {
 		for (int l = 1; l < total_lanes - 1; l++) {
 			if (cur_ED[l] == e) {
 				
 				//cout << "e: " << e << " l: " << l << endl;
+				int top_offset = 0;
+				int bot_offset = 0;
+
+				if (l >= mid_lane)
+					top_offset = 1;
+					
+				if (l <= mid_lane)
+					bot_offset = 1;
 
 				// Find the largest starting position
 				int max_start = end[l][e-1] + 1;
-				if (end[l-1][e-1] > max_start)
-					max_start = end[l-1][e-1];
+				if (end[l-1][e-1] + top_offset > max_start)
+					max_start = end[l-1][e-1] + top_offset;
 				if (end[l+1][e-1] > max_start)
-					max_start = end[l+1][e-1];
-
-				// Find the length of identical string
-				length = count_ID_length_sse(hamming_masks[l], max_start, buffer_length);
+					max_start = end[l+1][e-1] + bot_offset;
 
 				start[l][e] = max_start;
+
+				// Find the length of identical string
+				length = count_ID_length_sse(hamming_masks[l], start[l][e], buffer_length);
+
 				end[l][e] = max_start + length;
 
 				//cout << "start[" << l << "][" << e << "]: " << start[l][e];
 				//cout << "   end[" << l << "][" << e << "]: " << end[l][e] << endl;
 
-				if (end[l][e] == buffer_length - 1) {
+				if (end[l][e] == buffer_length) {
 					final_lane_idx = l;
 					final_ED = e;
 					ED_pass = true;

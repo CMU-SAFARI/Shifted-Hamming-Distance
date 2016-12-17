@@ -64,7 +64,7 @@ int main(int argc, char* argv[]) {
 	elp_time.tms_cutime = 0;
 
 	SIMD_ED ed_obj;
-	ed_obj.init(error + 1);
+	ed_obj.init(error);
 
 	do {
 		//clear past result
@@ -101,6 +101,8 @@ int main(int argc, char* argv[]) {
 			length = read_strs[read_idx].length();
 			if (length > 128)
 				length = 128;
+
+			//cout << "length: " << length << endl;
 			
 			ed_obj.load_reads((char*) read_strs[read_idx].c_str(), (char*) ref_strs[read_idx].c_str(), length);
 			ed_obj.reset();
@@ -109,6 +111,14 @@ int main(int argc, char* argv[]) {
 				//ed_obj.backtrack();
 				valid_buff[read_idx] = true;
 			}
+/*
+			else {
+				fprintf(stdout, "error!\n");
+				fprintf(stdout, "%.*s\n", 128, read_strs[read_idx].c_str() );
+				fprintf(stdout, "%.*s\n", 128, ref_strs[read_idx].c_str() );
+				exit(1);
+			}
+*/
 			/*			
 			strncpy(read_t, init_all_NULL, 128);
 			strncpy(ref_t, init_all_NULL, 128);
