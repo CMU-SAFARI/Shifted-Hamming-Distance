@@ -1,41 +1,23 @@
-#include "SIMD_ED.h"
+#include "LV.h"
 
-int count_ID_length_sse(__m128i bit_mask, int start_pos , int total_length) {
-	__m128i shifted_mask = shift_left_sse1(bit_mask, start_pos);
-	
-	//cout << "start_pos: " << start_pos << " ";
-	//print128_bit(shifted_mask);
+int LV::count_ID_length_sse(int lane_idx, int start_pos) {
+	int A_idx_offset = 0;
+	int B_idx_offset = 0;
 
-	unsigned long *byte_cast = (unsigned long*) &shifted_mask;
-	int length_result = 0;
-	
-	for (int i = 0; i <= (total_length - start_pos - 1) / (8 * sizeof(unsigned long) ); i++) {
-		int id_length = _tzcnt_u64(byte_cast[i]);
+	if (lane_idx < mid_lane)
+		A_idx_offset = mid_lane - lane_idx;
+	else if (lane_idx > mid_lane) 
+		B_idx_offset = lane_idx - mid_lane;
 
-		if (id_length == 8 * sizeof(unsigned long) && byte_cast[i] == 0) {
-			//cout << "A" << endl;
-			id_length = 8 * sizeof(unsigned long);
-			length_result += id_length;
-		}
-		else {
-			//cout << "B, byte_cast[" << i <<"]:" << byte_cast[i] << endl;
-			length_result += id_length;
-			break;
-		}
+	while (start_pos < buffer_length && A[start_pos - A_idx_offset] == B[start_pos - B_idx_offset]) {
+		start_pos++;
 	}
 
-	//cout << "length result: " << length_result << endl;
-
-	if (length_result < total_length - start_pos)
-		return length_result;
-	else
-		return total_length - start_pos;
+	return start_pos;
 }
 
-SIMD_ED::SIMD_ED() {
+LV::LV() {
 	ED_t = 0;
-
-	hamming_masks = NULL;
 
 	cur_ED = NULL;
 	start = NULL;
@@ -45,9 +27,8 @@ SIMD_ED::SIMD_ED() {
 	total_lanes = 0;
 }
 
-SIMD_ED::~SIMD_ED() {
+LV::~LV() {
 	if (total_lanes != 0) {
-		delete [] hamming_masks;
 		delete [] cur_ED;
 
 		for (int i = 0; i < total_lanes; i++) {
@@ -62,15 +43,13 @@ SIMD_ED::~SIMD_ED() {
 	}
 }
 
-void SIMD_ED::init(int ED_threshold) {
+void LV::init(int ED_threshold) {
 	if (total_lanes != 0)
-		this->~SIMD_ED();
+		this->~LV();
 
 	ED_t = ED_threshold;
 	total_lanes = 2 * ED_t + 3;
 	mid_lane = ED_t + 1;
-
-	hamming_masks = new __m128i [total_lanes];
 
 	cur_ED = new int[total_lanes];
 	ED_info = new ED_INFO[ED_t + 1];
@@ -84,55 +63,19 @@ void SIMD_ED::init(int ED_threshold) {
 	}
 }
 
-void SIMD_ED::load_reads(char *read, char *ref, int length) {
+void LV::load_reads(char *read, char *ref, int length) {
 	buffer_length = length;
 	
 	if (length > _MAX_LENGTH_)
 		length = _MAX_LENGTH_;
 
 	strncpy(A, read, length);
-
-	sse3_convert2bit1(A, A_bit0_t, A_bit1_t);
 	strncpy(B, ref, length);
-	sse3_convert2bit1(B, B_bit0_t, B_bit1_t);
 
-	//cout << "A: " << A  << endl;
-	//cout << "B: " << B  << endl;
-
-	__m128i *A0 = (__m128i*) A_bit0_t;
-	__m128i *A1 = (__m128i*) A_bit1_t;
-	__m128i *B0 = (__m128i*) B_bit0_t;
-	__m128i *B1 = (__m128i*) B_bit1_t;
-
-	for (int i = 1; i < total_lanes - 1; i++) {
-		__m128i shifted_A0 = *A0;
-		__m128i shifted_A1 = *A1;
-		__m128i shifted_B0 = *B0;
-		__m128i shifted_B1 = *B1;
-
-		int shift_amount = abs(i - mid_lane);
-
-		if (i < mid_lane) {
-			shifted_A0 = shift_left_sse1(shifted_A0, shift_amount);
-			shifted_A1 = shift_left_sse1(shifted_A1, shift_amount);
-		}
-		else if (i > mid_lane) {
-			shifted_B0 = shift_left_sse1(shifted_B0, shift_amount);
-			shifted_B1 = shift_left_sse1(shifted_B1, shift_amount);
-		}
-
-		__m128i mask_bit0 = _mm_xor_si128(shifted_A0, shifted_B0);
-		__m128i mask_bit1 = _mm_xor_si128(shifted_A1, shifted_B1);
-
-		hamming_masks[i] = _mm_or_si128(mask_bit0, mask_bit1);
-
-		//cout << "hamming_masks[" << i << "]: ";
-		//print128_bit(hamming_masks[i]);
-		//cout << endl;
-	}
+	//cout << "buffer_length: " << buffer_length << endl;
 }
 
-void SIMD_ED::reset() {
+void LV::reset() {
 	ED_pass = false;
 	for (int i = 1; i < total_lanes - 1; i++) {
 		int ED = abs(i - mid_lane);
@@ -142,15 +85,11 @@ void SIMD_ED::reset() {
 	}
 }
 
-void SIMD_ED::run() {
-	int length = count_ID_length_sse(hamming_masks[mid_lane], 0, buffer_length);
-	
-	//cout << "length result: " << length << " buffer_length: " << buffer_length << endl;
-
-	end[mid_lane][0] = length;
+void LV::run() {
+	end[mid_lane][0] = count_ID_length_sse(mid_lane, 0);
 	cur_ED[mid_lane] = 1;
 
-	if (length == buffer_length) {
+	if (end[mid_lane][0] == buffer_length) {
 		final_lane_idx = mid_lane;
 		final_ED = 0;
 		ED_pass = true;
@@ -162,7 +101,7 @@ void SIMD_ED::run() {
 			if (cur_ED[l] == e) {
 				
 				//cout << "e: " << e << " l: " << l << endl;
-
+				
 				int top_offset = 0;
 				int bot_offset = 0;
 
@@ -178,12 +117,9 @@ void SIMD_ED::run() {
 				if (end[l+1][e-1] + bot_offset > max_start)
 					max_start = end[l+1][e-1] + bot_offset;
 
-				start[l][e] = max_start;
-
 				// Find the length of identical string
-				length = count_ID_length_sse(hamming_masks[l], start[l][e], buffer_length);
-
-				end[l][e] = max_start + length;
+				start[l][e] = max_start;
+				end[l][e] = count_ID_length_sse(l, max_start);
 
 				//cout << "start[" << l << "][" << e << "]: " << start[l][e];
 				//cout << "   end[" << l << "][" << e << "]: " << end[l][e] << endl;
@@ -198,7 +134,6 @@ void SIMD_ED::run() {
 
 				cur_ED[l]++;
 			}
-
 		}
 
 		if (ED_pass)
@@ -206,11 +141,11 @@ void SIMD_ED::run() {
 	}
 }
 
-bool SIMD_ED::check_pass() {
+bool LV::check_pass() {
 	return ED_pass;
 }
 
-void SIMD_ED::backtrack() {
+void LV::backtrack() {
 	int lane_idx = final_lane_idx;
 	int ED_probe = final_ED;
 
@@ -256,11 +191,11 @@ void SIMD_ED::backtrack() {
 
 }
 
-int SIMD_ED::get_ED() {
+int LV::get_ED() {
 	return final_ED;
 }
 
-string SIMD_ED::get_CIGAR() {
+string LV::get_CIGAR() {
 	string CIGAR;
 	CIGAR = to_string(ED_info[0].id_length);
 	for (int i = 1; i <= final_ED; i++) {
