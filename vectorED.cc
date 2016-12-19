@@ -110,7 +110,7 @@ int main(int argc, char* argv[]) {
 			if (length[read_size] > 128)
 				length[read_size] = 128;
 
-			cout << "length: " << length[read_size] << endl;
+			//cout << "length: " << length[read_size] << endl;
 
 			ed_obj.convert_reads((char*) read_strs[read_size].c_str(), (char*) ref_strs[read_size].c_str(),
 					 	length[read_size], read0[read_size], read1[read_size], ref0[read_size], ref1[read_size]);
