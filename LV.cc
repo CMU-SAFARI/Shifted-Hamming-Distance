@@ -1,4 +1,5 @@
 #include "LV.h"
+#include <cstdio>
 
 int LV::count_ID_length_sse(int lane_idx, int start_pos) {
 	int A_idx_offset = 0;
@@ -196,8 +197,11 @@ int LV::get_ED() {
 }
 
 string LV::get_CIGAR() {
+	char buffer[32];
 	string CIGAR;
-	CIGAR = to_string(ED_info[0].id_length);
+	//CIGAR = to_string(ED_info[0].id_length);
+	sprintf(buffer, "%d", ED_info[0].id_length);
+	CIGAR = string(buffer);
 	for (int i = 1; i <= final_ED; i++) {
 		switch (ED_info[i].type) {
 		case MISMATCH:
@@ -211,7 +215,9 @@ string LV::get_CIGAR() {
 			break;
 		}
 
-		CIGAR += to_string(ED_info[i].id_length);
+		sprintf(buffer, "%d", ED_info[0].id_length);
+		CIGAR += string(buffer);
+		//CIGAR += to_string(ED_info[i].id_length);
 	}
 
 	return CIGAR;

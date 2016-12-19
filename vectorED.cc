@@ -17,6 +17,9 @@
 #include "SIMD_ED.h"
 
 #define BATCH_RUN 1000000 
+#ifndef _MAX_LENGTH_ 
+#define _MAX_LENGTH_ 128
+#endif
 
 using namespace std;
 
@@ -34,7 +37,19 @@ int main(int argc, char* argv[]) {
 	
 	string *read_strs = new string [BATCH_RUN];
 	string *ref_strs = new string [BATCH_RUN];
+	uint8_t **read0 = new uint8_t* [BATCH_RUN];
+	uint8_t **read1 = new uint8_t* [BATCH_RUN];
+	uint8_t **ref0 = new uint8_t* [BATCH_RUN];
+	uint8_t **ref1 = new uint8_t* [BATCH_RUN];
+	size_t *length = new size_t [BATCH_RUN];
 	bool *valid_buff = new bool [BATCH_RUN];
+
+	for (int i = 0; i < BATCH_RUN; i++) {
+		read0[i] = new uint8_t[_MAX_LENGTH_ / 8];
+		read1[i] = new uint8_t[_MAX_LENGTH_ / 8];
+		ref0[i] = new uint8_t[_MAX_LENGTH_ / 8];
+		ref1[i] = new uint8_t[_MAX_LENGTH_ / 8];
+	}
 
 	if (argc != 2) {
 		printf("Usage: $>bin error\n");
@@ -44,7 +59,6 @@ int main(int argc, char* argv[]) {
 	int error = atoi(argv[1]);
 
 	size_t lineLength;	
-	size_t length;
 	char* tempstr = NULL;
 
 	long long unsigned int passNum = 0;
@@ -75,9 +89,9 @@ int main(int argc, char* argv[]) {
 			
 			//get read
 			getline(&tempstr, &lineLength, stdin);
-			length = strlen(tempstr);
+			length[read_size] = strlen(tempstr);
 			//Get rid of the new line character
-			tempstr[length - 1] = '\0';
+			tempstr[length[read_size] - 1] = '\0';
 			
 			if (strcmp(tempstr, "end_of_file\0") == 0) {
 				stop = true;
@@ -87,24 +101,28 @@ int main(int argc, char* argv[]) {
 
 			//get ref
 			getline(&tempstr, &lineLength, stdin);
-			length = strlen(tempstr);
+			length[read_size] = strlen(tempstr);
 			//Get rid of the new line character
-			tempstr[length - 1] = '\0';
+			tempstr[length[read_size] - 1] = '\0';
 			ref_strs[read_size].assign(tempstr);
 			valid_buff[read_size] = false;
+
+			if (length[read_size] > 128)
+				length[read_size] = 128;
+			//ed_obj.convert_reads((char*) read_strs[read_size].c_str(), (char*) ref_strs[read_size].c_str(),
+					 	//length[read_size], read0[read_size], read1[read_size], ref0[read_size], ref1[read_size]);
 		}
 
 		times(&start_time);
 
 		for (read_idx = 0; read_idx < read_size; read_idx++) {
 
-			length = read_strs[read_idx].length();
-			if (length > 128)
-				length = 128;
 
 			//cout << "length: " << length << endl;
 			
-			ed_obj.load_reads((char*) read_strs[read_idx].c_str(), (char*) ref_strs[read_idx].c_str(), length);
+			ed_obj.load_reads((char*) read_strs[read_idx].c_str(), (char*) ref_strs[read_idx].c_str(), length[read_idx]);
+			//ed_obj.load_reads(read0[read_idx], read1[read_idx], ref0[read_idx], ref1[read_idx], length[read_idx]);
+			ed_obj.calculate_masks();
 			ed_obj.reset();
 			ed_obj.run();
 			if (ed_obj.check_pass() ) {
@@ -168,6 +186,19 @@ int main(int argc, char* argv[]) {
 
 	delete [] read_strs;
 	delete [] ref_strs;
+
+	for (int i = 0 ; i < BATCH_RUN; i++) {
+			delete [] read0[i];
+			delete [] read1[i];
+			delete [] ref0[i];
+			delete [] ref1[i];
+	}
+	delete [] read0;
+	delete [] read1;
+	delete [] ref0;
+	delete [] ref1;
+	delete [] length;
+	delete [] valid_buff;
 
 	return 0;
 

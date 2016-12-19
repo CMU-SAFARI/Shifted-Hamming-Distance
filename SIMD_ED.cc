@@ -1,10 +1,13 @@
+#include<cstdio>
 #include "SIMD_ED.h"
 
 int count_ID_length_sse(__m128i bit_mask, int start_pos , int total_length) {
 	__m128i shifted_mask = shift_left_sse1(bit_mask, start_pos);
 	
-	//cout << "start_pos: " << start_pos << " ";
-	//print128_bit(shifted_mask);
+#ifdef debug	
+	cout << "start_pos: " << start_pos << " ";
+	print128_bit(shifted_mask);
+#endif
 
 	unsigned long *byte_cast = (unsigned long*) &shifted_mask;
 	int length_result = 0;
@@ -24,7 +27,9 @@ int count_ID_length_sse(__m128i bit_mask, int start_pos , int total_length) {
 		}
 	}
 
-	//cout << "length result: " << length_result << endl;
+#ifdef debug	
+	cout << "length result: " << length_result << endl;
+#endif
 
 	if (length_result < total_length - start_pos)
 		return length_result;
@@ -84,6 +89,18 @@ void SIMD_ED::init(int ED_threshold) {
 	}
 }
 
+void SIMD_ED::convert_reads(char *read, char *ref, int length, uint8_t *A0, uint8_t *A1, uint8_t *B0, uint8_t *B1) {
+	strncpy(A, read, length);
+	sse3_convert2bit1(A, A_bit0_t, A_bit1_t);
+	strncpy(B, ref, length);
+	sse3_convert2bit1(B, B_bit0_t, B_bit1_t);
+
+	memcpy(A0, A_bit0_t, _MAX_LENGTH_ / 8);
+	memcpy(A1, A_bit1_t, _MAX_LENGTH_ / 8);
+	memcpy(B0, B_bit0_t, _MAX_LENGTH_ / 8);
+	memcpy(B1, B_bit1_t, _MAX_LENGTH_ / 8);
+}
+
 void SIMD_ED::load_reads(char *read, char *ref, int length) {
 	buffer_length = length;
 	
@@ -91,14 +108,23 @@ void SIMD_ED::load_reads(char *read, char *ref, int length) {
 		length = _MAX_LENGTH_;
 
 	strncpy(A, read, length);
-
 	sse3_convert2bit1(A, A_bit0_t, A_bit1_t);
 	strncpy(B, ref, length);
 	sse3_convert2bit1(B, B_bit0_t, B_bit1_t);
 
 	//cout << "A: " << A  << endl;
 	//cout << "B: " << B  << endl;
+}
 
+void SIMD_ED::load_reads(uint8_t *A0, uint8_t *A1, uint8_t *B0, uint8_t *B1, int length) {
+	buffer_length = length;
+	memcpy(A_bit0_t, A0, length / 8);
+	memcpy(A_bit1_t, A1, length / 8);
+	memcpy(B_bit0_t, B0, length / 8);
+	memcpy(B_bit1_t, B1, length / 8);
+}
+
+void SIMD_ED::calculate_masks() {
 	__m128i *A0 = (__m128i*) A_bit0_t;
 	__m128i *A1 = (__m128i*) A_bit1_t;
 	__m128i *B0 = (__m128i*) B_bit0_t;
@@ -144,8 +170,10 @@ void SIMD_ED::reset() {
 
 void SIMD_ED::run() {
 	int length = count_ID_length_sse(hamming_masks[mid_lane], 0, buffer_length);
-	
-	//cout << "length result: " << length << " buffer_length: " << buffer_length << endl;
+
+#ifdef debug	
+	cout << "length result: " << length << " buffer_length: " << buffer_length << endl;
+#endif
 
 	end[mid_lane][0] = length;
 	cur_ED[mid_lane] = 1;
@@ -161,7 +189,9 @@ void SIMD_ED::run() {
 		for (int l = 1; l < total_lanes - 1; l++) {
 			if (cur_ED[l] == e) {
 				
-				//cout << "e: " << e << " l: " << l << endl;
+#ifdef debug	
+				cout << "e: " << e << " l: " << l << endl;
+#endif
 
 				int top_offset = 0;
 				int bot_offset = 0;
@@ -185,8 +215,10 @@ void SIMD_ED::run() {
 
 				end[l][e] = max_start + length;
 
-				//cout << "start[" << l << "][" << e << "]: " << start[l][e];
-				//cout << "   end[" << l << "][" << e << "]: " << end[l][e] << endl;
+#ifdef debug	
+				cout << "start[" << l << "][" << e << "]: " << start[l][e];
+				cout << "   end[" << l << "][" << e << "]: " << end[l][e] << endl;
+#endif
 
 				if (end[l][e] == buffer_length) {
 					final_lane_idx = l;
@@ -261,8 +293,11 @@ int SIMD_ED::get_ED() {
 }
 
 string SIMD_ED::get_CIGAR() {
+	char buffer[32];
 	string CIGAR;
-	CIGAR = to_string(ED_info[0].id_length);
+	//CIGAR = to_string(ED_info[0].id_length);
+	sprintf(buffer, "%d", ED_info[0].id_length);
+	CIGAR = string(buffer);
 	for (int i = 1; i <= final_ED; i++) {
 		switch (ED_info[i].type) {
 		case MISMATCH:
@@ -276,7 +311,9 @@ string SIMD_ED::get_CIGAR() {
 			break;
 		}
 
-		CIGAR += to_string(ED_info[i].id_length);
+		sprintf(buffer, "%d", ED_info[0].id_length);
+		CIGAR += string(buffer);
+		//CIGAR += to_string(ED_info[i].id_length);
 	}
 
 	return CIGAR;

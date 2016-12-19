@@ -9,7 +9,7 @@
 #include "vector_filter.h"
 #include <nmmintrin.h>
 #include <tmmintrin.h>
-#include <x86intrin.h>
+//#include <x86intrin.h>
 #include <stdio.h>
 #include <string.h>
 #include "popcount.h"

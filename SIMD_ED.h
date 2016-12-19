@@ -9,7 +9,9 @@
 #include "vector_filter.h"
 #include "print.h"
 
+#ifndef _MAX_LENGTH_ 
 #define _MAX_LENGTH_ 128
+#endif
 
 #ifndef __SIMD_ED_H_
 #define __SIMD_ED_H_
@@ -30,7 +32,12 @@ public:
 
 	void init(int ED_threshold);
 
+	void convert_reads(char *read, char *ref, int length, uint8_t *A0, uint8_t *A1, uint8_t *B0, uint8_t *B1);
+
 	void load_reads(char *read, char *ref, int length);
+	void load_reads(uint8_t *A0, uint8_t *A1, uint8_t *B0, uint8_t *B1, int length);
+	
+	void calculate_masks();
 
 	void reset();	
 	void run();
