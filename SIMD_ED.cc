@@ -2,7 +2,7 @@
 #include "SIMD_ED.h"
 
 int count_ID_length_sse(__m128i bit_mask, int start_pos , int total_length) {
-	__m128i shifted_mask = shift_left_sse1(bit_mask, start_pos);
+	volatile __m128i shifted_mask = shift_left_sse1(bit_mask, start_pos);
 	
 #ifdef debug	
 	cout << "start_pos: " << start_pos << " ";
@@ -246,21 +246,32 @@ void SIMD_ED::backtrack() {
 	int lane_idx = final_lane_idx;
 	int ED_probe = final_ED;
 
-	while (ED_probe > abs(lane_idx - mid_lane) ) {
+	while (start[lane_idx][ED_probe] != abs(lane_idx - mid_lane) ) {
+
+#ifdef debug
+		cout << "end[" << lane_idx << "][" << ED_probe  << "]: " << end[lane_idx][ED_probe];
+		cout << "    start[" << lane_idx << "][" << ED_probe << "]: " << start[lane_idx][ED_probe] << endl;
+#endif
+
 		int match_count = end[lane_idx][ED_probe] - start[lane_idx][ED_probe];
 		ED_info[ED_probe].id_length = match_count;
-		
-		//cout << "start[" << lane_idx << "][" << ED_probe << "]: " << start[lane_idx][ED_probe];
-		//cout << "   end[" << lane_idx << "][" << ED_probe - 1 << "]: " << end[lane_idx][ED_probe - 1] << endl;
+
+		int top_offset = 0;
+		int bot_offset = 0;
+
+		if (lane_idx >= mid_lane)
+			top_offset = 1;
+		if (lane_idx <= mid_lane)
+			bot_offset = 1;
 
 		if (start[lane_idx][ED_probe] == (end[lane_idx][ED_probe - 1] + 1) ) {
 			ED_info[ED_probe].type = MISMATCH;
 		}
-		else if (start[lane_idx][ED_probe] == end[lane_idx - 1][ED_probe - 1]) {
+		else if (start[lane_idx][ED_probe] == end[lane_idx - 1][ED_probe - 1] + top_offset) {
 			lane_idx = lane_idx - 1;
 			ED_info[ED_probe].type = A_INS;
 		}
-		else if (start[lane_idx][ED_probe] == end[lane_idx + 1][ED_probe - 1]) {
+		else if (start[lane_idx][ED_probe] == end[lane_idx + 1][ED_probe - 1] + bot_offset) {
 			lane_idx = lane_idx + 1;
 			ED_info[ED_probe].type = B_INS;
 		}
@@ -293,11 +304,11 @@ int SIMD_ED::get_ED() {
 }
 
 string SIMD_ED::get_CIGAR() {
-	char buffer[32];
+	//char buffer[32];
 	string CIGAR;
-	//CIGAR = to_string(ED_info[0].id_length);
-	sprintf(buffer, "%d", ED_info[0].id_length);
-	CIGAR = string(buffer);
+	CIGAR = to_string(ED_info[0].id_length);
+	//sprintf(buffer, "%d", ED_info[0].id_length);
+	//CIGAR = string(buffer);
 	for (int i = 1; i <= final_ED; i++) {
 		switch (ED_info[i].type) {
 		case MISMATCH:
@@ -311,9 +322,9 @@ string SIMD_ED::get_CIGAR() {
 			break;
 		}
 
-		sprintf(buffer, "%d", ED_info[0].id_length);
-		CIGAR += string(buffer);
-		//CIGAR += to_string(ED_info[i].id_length);
+		//sprintf(buffer, "%d", ED_info[0].id_length);
+		//CIGAR += string(buffer);
+		CIGAR += to_string(ED_info[i].id_length);
 	}
 
 	return CIGAR;

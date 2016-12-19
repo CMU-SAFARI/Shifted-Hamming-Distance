@@ -89,9 +89,9 @@ int main(int argc, char* argv[]) {
 			
 			//get read
 			getline(&tempstr, &lineLength, stdin);
-			length[read_size] = strlen(tempstr);
+			length[read_size] = strlen(tempstr) - 1;
 			//Get rid of the new line character
-			tempstr[length[read_size] - 1] = '\0';
+			tempstr[length[read_size] ] = '\0';
 			
 			if (strcmp(tempstr, "end_of_file\0") == 0) {
 				stop = true;
@@ -101,16 +101,19 @@ int main(int argc, char* argv[]) {
 
 			//get ref
 			getline(&tempstr, &lineLength, stdin);
-			length[read_size] = strlen(tempstr);
+			length[read_size] = strlen(tempstr) - 1;
 			//Get rid of the new line character
-			tempstr[length[read_size] - 1] = '\0';
+			tempstr[length[read_size] ] = '\0';
 			ref_strs[read_size].assign(tempstr);
 			valid_buff[read_size] = false;
 
 			if (length[read_size] > 128)
 				length[read_size] = 128;
-			//ed_obj.convert_reads((char*) read_strs[read_size].c_str(), (char*) ref_strs[read_size].c_str(),
-					 	//length[read_size], read0[read_size], read1[read_size], ref0[read_size], ref1[read_size]);
+
+			cout << "length: " << length[read_size] << endl;
+
+			ed_obj.convert_reads((char*) read_strs[read_size].c_str(), (char*) ref_strs[read_size].c_str(),
+					 	length[read_size], read0[read_size], read1[read_size], ref0[read_size], ref1[read_size]);
 		}
 
 		times(&start_time);
@@ -118,15 +121,15 @@ int main(int argc, char* argv[]) {
 		for (read_idx = 0; read_idx < read_size; read_idx++) {
 
 
-			//cout << "length: " << length << endl;
 			
-			ed_obj.load_reads((char*) read_strs[read_idx].c_str(), (char*) ref_strs[read_idx].c_str(), length[read_idx]);
-			//ed_obj.load_reads(read0[read_idx], read1[read_idx], ref0[read_idx], ref1[read_idx], length[read_idx]);
+			//ed_obj.load_reads((char*) read_strs[read_idx].c_str(), (char*) ref_strs[read_idx].c_str(), length[read_idx]);
+			ed_obj.load_reads(read0[read_idx], read1[read_idx], ref0[read_idx], ref1[read_idx], length[read_idx]);
 			ed_obj.calculate_masks();
 			ed_obj.reset();
 			ed_obj.run();
 			if (ed_obj.check_pass() ) {
 				//ed_obj.backtrack();
+				//fprintf(stderr, "%.*s\n", 128, ed_obj.get_CIGAR().c_str() );
 				valid_buff[read_idx] = true;
 			}
 /*

@@ -1,6 +1,6 @@
 EXECUTABLE = countPassFilter popcount bit_convert vector_filter string_cp shift test_SIMD_ED vectorED vectorLV sse.o #ssse3_popcount test_modifier
 
-CXX = g++-5
+CXX = g++
 
 LD = ld
 
@@ -8,8 +8,8 @@ LDFLAGS = -r
 
 #CFLAGS = -g -mbmi --std=c++11 -msse4.2 -I .
 #CFLAGS = -O3 -mbmi --std=c++11 -msse4.2 -I . -Ddebug
-#CFLAGS = -O3 -mbmi --std=c++11 -msse4.2 -I .
-CFLAGS = -O3 -mbmi -msse4.2 -I .
+CFLAGS = -O3 -mbmi --std=c++11 -msse4.2 -I .
+#CFLAGS = -g -mbmi -msse4.2 -I .
 #CFLAGS_LV = -O3 --std=c++11
 UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S),Linux)
