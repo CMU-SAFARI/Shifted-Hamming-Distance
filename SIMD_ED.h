@@ -13,10 +13,11 @@
 #define _MAX_LENGTH_ 128
 #endif
 
-#ifndef __SIMD_ED_H_
-#define __SIMD_ED_H_
 
 using namespace std;
+
+#ifndef __ED_INFO_H_
+#define __ED_INFO_H_
 
 enum ED_TYPE {MISMATCH, A_INS, B_INS};
 
@@ -25,12 +26,18 @@ struct ED_INFO {
 	int id_length;	
 };
 
+#endif
+
+#ifndef __SIMD_ED_H_
+#define __SIMD_ED_H_
+
 class SIMD_ED {
 public:
 	SIMD_ED();
 	~SIMD_ED();
 
 	void init(int ED_threshold);
+	int count_ID_length_sse(int lane_idx, int start_pos);
 
 	void convert_reads(char *read, char *ref, int length, uint8_t *A0, uint8_t *A1, uint8_t *B0, uint8_t *B1);
 
@@ -48,6 +55,7 @@ public:
 private:
 	int ED_t;
 	__m128i *hamming_masks;
+	__m128i shifted_mask;
 
 	// information of each lane
 	int *cur_ED;

@@ -1,8 +1,8 @@
 #include<cstdio>
 #include "SIMD_ED.h"
 
-int count_ID_length_sse(__m128i bit_mask, int start_pos , int total_length) {
-	volatile __m128i shifted_mask = shift_left_sse1(bit_mask, start_pos);
+int SIMD_ED::count_ID_length_sse(int lane_idx, int start_pos) {
+	shifted_mask = shift_left_sse1(hamming_masks[lane_idx], start_pos);
 	
 #ifdef debug	
 	cout << "start_pos: " << start_pos << " ";
@@ -12,7 +12,7 @@ int count_ID_length_sse(__m128i bit_mask, int start_pos , int total_length) {
 	unsigned long *byte_cast = (unsigned long*) &shifted_mask;
 	int length_result = 0;
 	
-	for (int i = 0; i <= (total_length - start_pos - 1) / (8 * sizeof(unsigned long) ); i++) {
+	for (int i = 0; i <= (buffer_length - start_pos - 1) / (8 * sizeof(unsigned long) ); i++) {
 		int id_length = _tzcnt_u64(byte_cast[i]);
 
 		if (id_length == 8 * sizeof(unsigned long) && byte_cast[i] == 0) {
@@ -31,10 +31,10 @@ int count_ID_length_sse(__m128i bit_mask, int start_pos , int total_length) {
 	cout << "length result: " << length_result << endl;
 #endif
 
-	if (length_result < total_length - start_pos)
+	if (length_result < buffer_length - start_pos)
 		return length_result;
 	else
-		return total_length - start_pos;
+		return buffer_length - start_pos;
 }
 
 SIMD_ED::SIMD_ED() {
@@ -139,12 +139,12 @@ void SIMD_ED::calculate_masks() {
 		int shift_amount = abs(i - mid_lane);
 
 		if (i < mid_lane) {
-			shifted_A0 = shift_left_sse1(shifted_A0, shift_amount);
-			shifted_A1 = shift_left_sse1(shifted_A1, shift_amount);
+			shifted_B0 = shift_right_sse1(shifted_B0, shift_amount);
+			shifted_B1 = shift_right_sse1(shifted_B1, shift_amount);
 		}
 		else if (i > mid_lane) {
-			shifted_B0 = shift_left_sse1(shifted_B0, shift_amount);
-			shifted_B1 = shift_left_sse1(shifted_B1, shift_amount);
+			shifted_A0 = shift_right_sse1(shifted_A0, shift_amount);
+			shifted_A1 = shift_right_sse1(shifted_A1, shift_amount);
 		}
 
 		__m128i mask_bit0 = _mm_xor_si128(shifted_A0, shifted_B0);
@@ -169,7 +169,7 @@ void SIMD_ED::reset() {
 }
 
 void SIMD_ED::run() {
-	int length = count_ID_length_sse(hamming_masks[mid_lane], 0, buffer_length);
+	int length = count_ID_length_sse(mid_lane, 0);
 
 #ifdef debug	
 	cout << "length result: " << length << " buffer_length: " << buffer_length << endl;
@@ -211,7 +211,7 @@ void SIMD_ED::run() {
 				start[l][e] = max_start;
 
 				// Find the length of identical string
-				length = count_ID_length_sse(hamming_masks[l], start[l][e], buffer_length);
+				length = count_ID_length_sse(l, start[l][e]);
 
 				end[l][e] = max_start + length;
 

@@ -8,10 +8,10 @@
 
 #define _MAX_LENGTH_ 128
 
-#ifndef __LV_H_
-#define __LV_H_
-
 using namespace std;
+
+#ifndef __ED_INFO_H_
+#define __ED_INFO_H_
 
 enum ED_TYPE {MISMATCH, A_INS, B_INS};
 
@@ -19,6 +19,11 @@ struct ED_INFO {
 	ED_TYPE type;
 	int id_length;	
 };
+
+#endif
+
+#ifndef __LV_H_
+#define __LV_H_
 
 class LV {
 public:

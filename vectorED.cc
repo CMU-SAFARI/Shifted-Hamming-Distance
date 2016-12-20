@@ -37,12 +37,14 @@ int main(int argc, char* argv[]) {
 	
 	string *read_strs = new string [BATCH_RUN];
 	string *ref_strs = new string [BATCH_RUN];
+	bool *valid_buff = new bool [BATCH_RUN];
+
+/*
 	uint8_t **read0 = new uint8_t* [BATCH_RUN];
 	uint8_t **read1 = new uint8_t* [BATCH_RUN];
 	uint8_t **ref0 = new uint8_t* [BATCH_RUN];
 	uint8_t **ref1 = new uint8_t* [BATCH_RUN];
 	size_t *length = new size_t [BATCH_RUN];
-	bool *valid_buff = new bool [BATCH_RUN];
 
 	for (int i = 0; i < BATCH_RUN; i++) {
 		read0[i] = new uint8_t[_MAX_LENGTH_ / 8];
@@ -50,6 +52,7 @@ int main(int argc, char* argv[]) {
 		ref0[i] = new uint8_t[_MAX_LENGTH_ / 8];
 		ref1[i] = new uint8_t[_MAX_LENGTH_ / 8];
 	}
+*/
 
 	if (argc != 2) {
 		printf("Usage: $>bin error\n");
@@ -89,9 +92,10 @@ int main(int argc, char* argv[]) {
 			
 			//get read
 			getline(&tempstr, &lineLength, stdin);
-			length[read_size] = strlen(tempstr) - 1;
+			int length = strlen(tempstr) - 1;
+			//length[read_size] = strlen(tempstr) - 1;
 			//Get rid of the new line character
-			tempstr[length[read_size] ] = '\0';
+			tempstr[length] = '\0';
 			
 			if (strcmp(tempstr, "end_of_file\0") == 0) {
 				stop = true;
@@ -101,29 +105,29 @@ int main(int argc, char* argv[]) {
 
 			//get ref
 			getline(&tempstr, &lineLength, stdin);
-			length[read_size] = strlen(tempstr) - 1;
+			length = strlen(tempstr) - 1;
+			//length[read_size] = strlen(tempstr) - 1;
 			//Get rid of the new line character
-			tempstr[length[read_size] ] = '\0';
+			tempstr[length] = '\0';
 			ref_strs[read_size].assign(tempstr);
 			valid_buff[read_size] = false;
 
-			if (length[read_size] > 128)
-				length[read_size] = 128;
+			//if (length[read_size] > 128)
+				//length[read_size] = 128;
 
 			//cout << "length: " << length[read_size] << endl;
 
-			ed_obj.convert_reads((char*) read_strs[read_size].c_str(), (char*) ref_strs[read_size].c_str(),
-					 	length[read_size], read0[read_size], read1[read_size], ref0[read_size], ref1[read_size]);
+			//ed_obj.convert_reads((char*) read_strs[read_size].c_str(), (char*) ref_strs[read_size].c_str(),
+					 	//length[read_size], read0[read_size], read1[read_size], ref0[read_size], ref1[read_size]);
 		}
 
 		times(&start_time);
 
 		for (read_idx = 0; read_idx < read_size; read_idx++) {
-
-
 			
-			//ed_obj.load_reads((char*) read_strs[read_idx].c_str(), (char*) ref_strs[read_idx].c_str(), length[read_idx]);
-			ed_obj.load_reads(read0[read_idx], read1[read_idx], ref0[read_idx], ref1[read_idx], length[read_idx]);
+			int length = read_strs[read_idx].length();
+			ed_obj.load_reads((char*) read_strs[read_idx].c_str(), (char*) ref_strs[read_idx].c_str(), length);
+			//ed_obj.load_reads(read0[read_idx], read1[read_idx], ref0[read_idx], ref1[read_idx], length[read_idx]);
 			ed_obj.calculate_masks();
 			ed_obj.reset();
 			ed_obj.run();
@@ -189,7 +193,9 @@ int main(int argc, char* argv[]) {
 
 	delete [] read_strs;
 	delete [] ref_strs;
+	delete [] valid_buff;
 
+/*
 	for (int i = 0 ; i < BATCH_RUN; i++) {
 			delete [] read0[i];
 			delete [] read1[i];
@@ -201,7 +207,7 @@ int main(int argc, char* argv[]) {
 	delete [] ref0;
 	delete [] ref1;
 	delete [] length;
-	delete [] valid_buff;
+*/
 
 	return 0;
 
