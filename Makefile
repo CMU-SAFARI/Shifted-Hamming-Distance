@@ -76,7 +76,7 @@ test_modifier: mask.o print.o bit_convert.o popcount.o vector_filter.o read_modi
 vectorED: SIMD_ED.o mask.o print.o bit_convert.o popcount.o vector_filter.o vectorED.cc
 	$(CXX) $(CFLAGS) $^ -o $@
 
-vectorLV: LV.o mask.o print.o bit_convert.o popcount.o vector_filter.o vectorLV.cc
+vectorLV: LV.o vectorLV.cc
 	$(CXX) $(CFLAGS) $^ -o $@
 
 test_SIMD_ED: SIMD_ED.o vector_filter.o bit_convert.o mask.o popcount.o print.o test_ED.cc

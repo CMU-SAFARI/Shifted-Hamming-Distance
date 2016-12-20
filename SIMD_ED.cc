@@ -2,14 +2,18 @@
 #include "SIMD_ED.h"
 
 int SIMD_ED::count_ID_length_sse(int lane_idx, int start_pos) {
-	shifted_mask = shift_left_sse1(hamming_masks[lane_idx], start_pos);
+	__m128i shifted_mask = shift_left_sse1(hamming_masks[lane_idx], start_pos);
 	
 #ifdef debug	
 	cout << "start_pos: " << start_pos << " ";
 	print128_bit(shifted_mask);
 #endif
 
-	unsigned long *byte_cast = (unsigned long*) &shifted_mask;
+	//unsigned long *byte_cast = (unsigned long*) &shifted_mask;
+	unsigned long byte_cast [2] __aligned__;
+	_mm_store_si128((__m128i*) byte_cast, shifted_mask); 
+
+
 	int length_result = 0;
 	
 	for (int i = 0; i <= (buffer_length - start_pos - 1) / (8 * sizeof(unsigned long) ); i++) {

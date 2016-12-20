@@ -55,7 +55,7 @@ public:
 private:
 	int ED_t;
 	__m128i *hamming_masks;
-	__m128i shifted_mask;
+	//__m128i shifted_mask;
 
 	// information of each lane
 	int *cur_ED;
