@@ -52,6 +52,9 @@ Accurate SIMD-Friendly Filter to Accelerate Alignment Verification in Read Mappi
 
 # Getting Started
 
+Dependencies:
+	SHD needs the [boost C++](https://www.boost.org/) libraries
+
 To build SHD, simply do:
 
 	$ make
